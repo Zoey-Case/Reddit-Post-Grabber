@@ -3,20 +3,21 @@ import PackageHandler as PH
 
 #### DEPENDENCIES ####
 
-PH.ensure_installed("csv")
+PH.EnsureInstalled("csv")
 import csv
-PH.ensure_installed("os")
+PH.EnsureInstalled("os")
 import os
-PH.ensure_installed("requests")
+PH.EnsureInstalled("requests")
 import requests
-PH.ensure_installed("yt_dlp")
+PH.EnsureInstalled("yt_dlp")
 import yt_dlp
+PH.EnsureInstalled("time")
+import time
 
 ######################
 
 
-
-def export_csv(post, comments, postNum, folder="DataSheets"):
+def ExportCSV(post, comments, postNum, folder="DataSheets"):
     if not os.path.exists(folder):
         os.makedirs(folder)
 
@@ -29,35 +30,33 @@ def export_csv(post, comments, postNum, folder="DataSheets"):
         writer.writerow(['----', '----', '----', '----'])
         writer.writerow(['Comment #', 'Comment Author', 'Comment Content', '----'])
 
-        comment_count = 1
+        commentCount = 1
         for comment in comments:
-            writer.writerow([comment_count, comment[0], comment[1]])
-            comment_count += 1
+            writer.writerow([commentCount, comment[0], comment[1]])
+            commentCount += 1
 
-
-
-def extract_comments(data):
-    comments_data = data[1]['data']['children']
+def ExtractComments(data):
+    commentsData = data[1]['data']['children']
     comments = list()
 
-    for item in comments_data:
+    for item in commentsData:
         if item['kind'] == 't1':
             comments.append((item['data'].get('author', '[Deleted]'), item['data'].get('body', '')))
 
     return comments
 
-
-
-def extract_media(url, post_num, folder="Media"):
+def ExtractMedia(url, post_num, folder="Media"):
+    succeeded = False
+    
     if not os.path.exists(folder):
         os.makedirs(folder)
 
     print("Attempting to fetch media.")
 
-    valid_direct_extensions = ('.jpg', '.jpeg', '.png', '.gif', '.mp3', '.wav', '.ogg', '.flac')
+    validExtensions = ('.jpg', '.jpeg', '.png', '.gif', '.mp3', '.wav', '.ogg', '.flac')
     filename = f"Post#{post_num}"
 
-    if url.endswith(valid_direct_extensions):
+    if url.endswith(validExtensions):
         filepath = os.path.join(folder, filename)
 
         try:
@@ -66,9 +65,7 @@ def extract_media(url, post_num, folder="Media"):
                 with open(filepath, 'wb') as file:
                     for chunk in response.iter_content(1024):
                         file.write(chunk)
-                print(f"Media file saved to: {filepath}\n")
-            else:
-                print(f"Download FAILED due to error: {response.status_code}\n")
+                succeeded = True
         except Exception as e:
             print(f"Download FAILED due to error: {e}\n")
 
@@ -82,40 +79,33 @@ def extract_media(url, post_num, folder="Media"):
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
-            print(f"Media file saved to: {folder}\n")
+            succeeded = True
         except Exception as e:
             print(f"Download FAILED due to error: {e}\n")
+        
+    return succeeded
 
-    else:
-        print("No media detected at host.\n")
-
-
-
-def extract_post(data, url):
+def ExtractPost(data, url):
     # Extract the post details.
-    post_data = data[0]['data']['children'][0]['data']
+    postData = data[0]['data']['children'][0]['data']
     
-    postName = post_data.get('title')
-    author = post_data.get('author', '[Deleted User]')
-    content = post_data.get('selftext', '')
-    media = post_data.get('url', '')
+    postName = postData.get('title')
+    author = postData.get('author', '[Deleted User]')
+    content = postData.get('selftext', '')
+    media = postData.get('url', '')
     
-    if post_data.get('is_video'):
-        print("Native video detected.")
+    if postData.get('is_video'):
         media = url
-    elif post_data.get('secure_media') and post_data['secure_media'].get('oembed'):
-        print("Embedded video detected.")
-        media = post_data['secure_media']['oembed'].get('url', url)
+    elif postData.get('secure_media') and postData['secure_media'].get('oembed'):
+        media = postData['secure_media']['oembed'].get('url', url)
     
     return list((postName, author, content, media))
 
-
-
-def fetch_post(url):
+def FetchPost(url):
     print(f"Fetching POST from: {url}...\n")
 
     # Modify the URL to bypass Reddit API restrictions.
-    json_url = url.rstrip('/') + '.json'
+    jsonURL = url.rstrip('/') + '.json'
 
     # Set up the user agent.
     headers = {
@@ -123,10 +113,67 @@ def fetch_post(url):
     }
 
     # Make the access request.
-    response = requests.get(json_url, headers=headers)
+    response = requests.get(jsonURL, headers=headers)
 
     if response.status_code != 200:
-        print(f"Error: Failed to retrieve data! \nStatus Code: {response.status_code}\n")
         return
 
     return response.json()
+
+def FetchURLs(subReddit, queryLimit):
+    
+    print(f"Fetching posts from r/{subReddit}...")
+
+    # Set up the user agent.
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+
+    urls = []
+    afterToken = None
+
+    # Keep looping until we reach our target count or the end of the subreddit.
+    while len(urls) < queryLimit:
+        url = f"https://www.reddit.com/r/{subReddit}/hot.json?t=all&limit=100"
+
+        # If we have a token from a previous loop, add it to go to the next page.
+        if afterToken:
+            url += f"&after={afterToken}"
+
+        # Make the access request
+        response = requests.get(url, headers=headers)
+
+        if response.status_code != 200:
+            break
+
+        data = response.json()
+        posts = data['data']['children']
+        
+        # Check if at end of subreddit.
+        if not posts:
+            break
+
+        # Extract the data for each post on this page.
+        for post in posts:
+            fullURL = f"https://www.reddit.com{post['data'].get('permalink')}"
+
+            urls.append(fullURL)
+
+            # Stop if we hit the query limit during this loop.
+            if len(urls) >= queryLimit:
+                break
+
+        # Get the token for the next page
+        afterToken = data['data'].get('after')
+        print(f"Collecting URLs...")
+
+        # If there is no next page, stop the loop
+        if not afterToken:
+            break
+
+        # Pause for 2 seconds to avoid being blocked by Reddit's anti-DDOS.
+        time.sleep(2)
+
+    print(f"URLs collected.")
+
+    return urls
