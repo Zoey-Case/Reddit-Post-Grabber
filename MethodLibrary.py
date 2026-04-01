@@ -13,6 +13,7 @@ PH.EnsureInstalled("yt_dlp")
 import yt_dlp
 PH.EnsureInstalled("time")
 import time
+PH.EnsureInstalled("ffmpeg")
 
 ######################
 
