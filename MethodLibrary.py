@@ -79,10 +79,13 @@ def ExtractMedia(url, post_num, folder="Media"):
         }
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
+                ydl.download([url])1    
             succeeded = True
         except Exception as e:
             print(f"Download FAILED due to error: {e}\n")
+
+    # Pause for 5 seconds to avoid being blocked by Reddit's anti-DDOS.
+    time.sleep(5)
         
     return succeeded
 
@@ -172,8 +175,8 @@ def FetchURLs(subReddit, queryLimit):
         if not afterToken:
             break
 
-        # Pause for 2 seconds to avoid being blocked by Reddit's anti-DDOS.
-        time.sleep(2)
+        # Pause for 5 seconds to avoid being blocked by Reddit's anti-DDOS.
+        time.sleep(5)
 
     print(f"URLs collected.")
 
