@@ -4,14 +4,14 @@ print("\n")
 subName = input("Please provide a subreddit name: ")
 desiredPosts = int(input("Please provide a number of posts to collect: "))
 queryLimit = desiredPosts
-postType = input("Would you like to skip posts which do not include attached audio or video files?\n")
 
+onlyVideoInput = input("Would you like to skip posts which do not include attached audio or video files?\n")
 print("\n")
 
 postIndex = 0
 difference = 0
 
-if postType[0] == 'Y' or postType[0] == 'y':
+if onlyVideoInput[0] == 'Y' or onlyVideoInput[0] == 'y':
     print("Skipping posts which do not contain media...")
     
     urls = ML.FetchURLs(subName, queryLimit * 20)
@@ -36,15 +36,26 @@ if postType[0] == 'Y' or postType[0] == 'y':
     
         print("\n\n")
 else:
+    skipVideoInput = input("Would you like to only grab text content from posts?\n")
+    print("\n")
+    
     urls = ML.FetchURLs(subName, queryLimit)
-    print("Fetching all discovered posts...")
+    
+    skipVideos = (skipVideoInput[0] == 'Y' or skipVideoInput[0] == 'y')
+    
+    if skipVideos:
+        print("Fetching only text content from discovered posts...")
+    else:
+        print("Fetching all content from discovered posts...")
     
     while postIndex < queryLimit:
         data = ML.FetchPost(urls[postIndex])
         post = ML.ExtractPost(data, urls[postIndex])
         comments = ML.ExtractComments(data)
 
-        ML.ExtractMedia(urls[postIndex], postIndex + 1)
+        if not skipVideos:
+            ML.ExtractMedia(urls[postIndex], postIndex + 1)
+            
         ML.ExportCSV(post, comments, postIndex + 1)
 
         postIndex += 1

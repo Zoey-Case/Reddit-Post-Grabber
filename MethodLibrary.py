@@ -79,7 +79,7 @@ def ExtractMedia(url, post_num, folder="Media"):
         }
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])1    
+                ydl.download([url])
             succeeded = True
         except Exception as e:
             print(f"Download FAILED due to error: {e}\n")
