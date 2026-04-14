@@ -68,7 +68,7 @@ def ExtractMedia(url, post_num, folder="Media"):
                         file.write(chunk)
                 succeeded = True
         except Exception as e:
-            print(f"Download FAILED due to error: {e}\n")
+            print(f"Download FAILED due to error: {e}")
 
     elif any(domain in url for domain in ['v.redd.it', 'reddit.com', 'youtube.com', 'youtu.be', 'soundcloud.com', 'vocaroo.com']):
         print("Split media detected at host. Attempting to merge...")
@@ -82,10 +82,10 @@ def ExtractMedia(url, post_num, folder="Media"):
                 ydl.download([url])
             succeeded = True
         except Exception as e:
-            print(f"Download FAILED due to error: {e}\n")
+            print(f"Download FAILED due to error: {e}")
 
     # Pause for 5 seconds to avoid being blocked by Reddit's anti-DDOS.
-    time.sleep(5)
+    time.sleep(2.5)
         
     return succeeded
 
@@ -102,11 +102,11 @@ def ExtractPost(data, url):
         media = url
     elif postData.get('secure_media') and postData['secure_media'].get('oembed'):
         media = postData['secure_media']['oembed'].get('url', url)
-    
+    time.sleep(0.15)
     return list((postName, author, content, media))
 
 def FetchPost(url):
-    print(f"Fetching POST from: {url}...\n")
+    print(f"Fetching POST from: {url}...")
 
     # Modify the URL to bypass Reddit API restrictions.
     jsonURL = url.rstrip('/') + '.json'
@@ -176,7 +176,7 @@ def FetchURLs(subReddit, queryLimit):
             break
 
         # Pause for 5 seconds to avoid being blocked by Reddit's anti-DDOS.
-        time.sleep(5)
+        time.sleep(1)
 
     print(f"URLs collected.")
 
