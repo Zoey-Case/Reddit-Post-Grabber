@@ -85,7 +85,7 @@ def ExtractMedia(url, post_num, folder="Media"):
             print(f"Download FAILED due to error: {e}")
 
     # Pause for 5 seconds to avoid being blocked by Reddit's anti-DDOS.
-    time.sleep(2.5)
+    time.sleep(5)
         
     return succeeded
 
@@ -102,7 +102,9 @@ def ExtractPost(data, url):
         media = url
     elif postData.get('secure_media') and postData['secure_media'].get('oembed'):
         media = postData['secure_media']['oembed'].get('url', url)
-    time.sleep(0.15)
+    
+    # Pause for 1 second to avoid being blocked by Reddit's anti-DDOS.
+    time.sleep(1)
     return list((postName, author, content, media))
 
 def FetchPost(url):
@@ -175,8 +177,8 @@ def FetchURLs(subReddit, queryLimit):
         if not afterToken:
             break
 
-        # Pause for 5 seconds to avoid being blocked by Reddit's anti-DDOS.
-        time.sleep(1)
+        # Pause for 2 seconds to avoid being blocked by Reddit's anti-DDOS.
+        time.sleep(2)
 
     print(f"URLs collected.")
 
