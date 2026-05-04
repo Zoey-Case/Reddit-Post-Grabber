@@ -1,5 +1,6 @@
 import MethodLibrary as ML
 
+
 print("\n")
 subName = input("Please provide a subreddit name: ")
 desiredPosts = int(input("Please provide a number of posts to collect: "))
@@ -10,9 +11,13 @@ print("")
 
 postIndex = 0
 difference = 0
+generateAudio = False
 
 if onlyVideoInput[0].upper() == 'Y':
     print("Skipping posts which do not contain media...")
+    genAudioInput = input("Would you like to also generate audio files from any video files? ")
+    if (genAudioInput[0].upper() == 'Y'):
+        generateAudio = True
     
     urls = ML.FetchURLs(subName, queryLimit * 20)
     postNum = 0
@@ -21,7 +26,7 @@ if onlyVideoInput[0].upper() == 'Y':
         queryLimit = len(urls)
     
     while postIndex < queryLimit:
-        fetchSucceeded = ML.ExtractMedia(urls[postIndex], postNum + 1)
+        fetchSucceeded = ML.ExtractMedia(urls[postIndex], postNum + 1, generateAudio)
     
         if fetchSucceeded:
             data = ML.FetchPost(urls[postIndex])
@@ -41,6 +46,7 @@ if onlyVideoInput[0].upper() == 'Y':
 else:
     skipVideoInput = input("Would you like to only grab text content from posts? ")
     print("\n")
+    generateAudio = False
     
     urls = ML.FetchURLs(subName, queryLimit)
     
@@ -53,6 +59,7 @@ else:
         print("Fetching only text content from discovered posts...")
     else:
         print("Fetching all content from discovered posts...")
+        generateAudio = input("Would you like to also generate audio files from any video files? ")
     
     while postIndex < queryLimit:
         print(f"Post Index {postIndex}")
@@ -61,7 +68,7 @@ else:
         comments = ML.ExtractComments(data)
 
         if not skipVideos:
-            ML.ExtractMedia(urls[postIndex], postIndex + 1)
+            ML.ExtractMedia(urls[postIndex], postIndex + 1, generateAudio)
             
         ML.ExportCSV(post, comments, postIndex + 1)
 
