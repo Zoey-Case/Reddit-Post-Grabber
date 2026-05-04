@@ -14,6 +14,8 @@ import yt_dlp
 PH.EnsureInstalled("time")
 import time
 PH.EnsureInstalled("ffmpeg")
+PH.EnsureInstalled("audio_extract")
+import audio_extract as AE
 
 ######################
 
@@ -36,6 +38,7 @@ def ExportCSV(post, comments, postNum, folder="DataSheets"):
             writer.writerow([commentCount, comment[0], comment[1]])
             commentCount += 1
 
+
 def ExtractComments(data):
     commentsData = data[1]['data']['children']
     comments = list()
@@ -46,7 +49,8 @@ def ExtractComments(data):
 
     return comments
 
-def ExtractMedia(url, post_num, folder="Media"):
+
+def ExtractMedia(url, postNum, generateAudioFile = False, folder ="Media"):
     succeeded = False
     
     if not os.path.exists(folder):
@@ -55,7 +59,7 @@ def ExtractMedia(url, post_num, folder="Media"):
     print("Attempting to fetch media.")
 
     validExtensions = ('.jpg', '.jpeg', '.png', '.gif', '.mp3', '.wav', '.ogg', '.flac')
-    filename = f"Post#{post_num}"
+    filename = f"Post#{postNum}"
 
     if url.endswith(validExtensions):
         filepath = os.path.join(folder, filename)
@@ -71,7 +75,7 @@ def ExtractMedia(url, post_num, folder="Media"):
             print(f"Download FAILED due to error: {e}")
 
     elif any(domain in url for domain in ['v.redd.it', 'reddit.com', 'youtube.com', 'youtu.be', 'soundcloud.com', 'vocaroo.com']):
-        print("Split media detected at host. Attempting to merge...")
+        print("Media Detected. Downloading...")
         ydl_opts = {
             'outtmpl': f'{folder}/{filename}.%(ext)s',
             'quiet': True,
@@ -86,8 +90,13 @@ def ExtractMedia(url, post_num, folder="Media"):
 
     # Pause for 5 seconds to avoid being blocked by Reddit's anti-DDOS.
     time.sleep(5)
+
+    if (succeeded and generateAudioFile):
+        print("Generating AUDIO FILE from VIDEO FILE...")
+        GenerateAudioFileFromVideoFile(f"Post#{postNum}", folder)
         
     return succeeded
+
 
 def ExtractPost(data, url):
     # Extract the post details.
@@ -107,6 +116,7 @@ def ExtractPost(data, url):
     time.sleep(1)
     return list((postName, author, content, media))
 
+
 def FetchPost(url):
     print(f"Fetching POST from: {url}...")
 
@@ -125,6 +135,7 @@ def FetchPost(url):
         return
 
     return response.json()
+
 
 def FetchURLs(subReddit, queryLimit):
     
@@ -183,3 +194,13 @@ def FetchURLs(subReddit, queryLimit):
     print(f"URLs collected.")
 
     return urls
+
+
+def GenerateAudioFileFromVideoFile(fileName, oldFolder, newFolder ="ConvertedMedia"):
+    if not os.path.exists(f"{oldFolder}/{fileName}.mp4"):
+        return
+    
+    if not os.path.exists(newFolder):
+        os.makedirs(newFolder)
+    
+    AE.extract_audio(input_path = f"{oldFolder}/{fileName}.mp4", output_path = f"{newFolder}/{fileName}.wav", output_format = "wav")
